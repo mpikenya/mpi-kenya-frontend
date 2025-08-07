@@ -2,12 +2,21 @@
   "expo": {
     "name": "Frontend",
     "slug": "Frontend",
+    "owner": "peaceinitiative",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "frontend",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
+    "extra": {
+      "//": "This links the project to EAS. Do not remove.",
+      "eas": {
+        "projectId": "84168f9b-1737-4b57-af08-20be6d3a8b3a"
+      }
+    },
+
     "ios": {
       "supportsTablet": true
     },
@@ -16,7 +25,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.peaceinitiative.Frontend"
     },
     "web": {
       "bundler": "metro",
@@ -33,7 +43,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
