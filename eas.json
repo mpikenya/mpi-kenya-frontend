@@ -14,7 +14,7 @@
     "production": {
       "autoIncrement": true,
 
-      "//": "This is the crucial change: It tells EAS to build an APK instead of an AAB.",
+      
       "android": {
         "buildType": "apk"
       },
