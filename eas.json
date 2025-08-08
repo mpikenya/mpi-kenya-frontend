@@ -13,6 +13,13 @@
     },
     "production": {
       "autoIncrement": true,
+
+      "//": "This is the crucial change: It tells EAS to build an APK instead of an AAB.",
+      "android": {
+        "buildType": "apk"
+      },
+
+      "//": "This injects your production keys into the final app.",
       "env": {
         "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsubXBpa2VueWEub3JnJA",
         "EXPO_PUBLIC_API_URL": "https://mpi-kenya-backend.onrender.com"
