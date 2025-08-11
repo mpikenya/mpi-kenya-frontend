@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   socialContainer: {
     alignItems: "center",
     // Use responsive margins
-    marginTop: height * 0.04,
+    marginTop: 60,
     marginBottom: height * 0.04,
   },
 
@@ -194,24 +194,26 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  laaButton: {
-    // Use responsive margin
-    marginTop: height * 0.15,
-    width: width * 0.15,
-    height: width * 0.15,
-    borderRadius: (width * 0.15) / 2,
-    backgroundColor: "#3498db",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-  },
-
-  laaText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: scale(14), // Scaled font size
-  },
+   laaButton: {
+        width: 60, // Set a fixed width
+        height: 60, // Set a fixed height
+        borderRadius: 30, // Make it a perfect circle (half of width/height)
+        backgroundColor: '#38bdf8', // A nice sky blue color
+        justifyContent: 'center', // Center the text vertically
+        alignItems: 'center', // Center the text horizontally
+        
+        // Add a subtle shadow for depth (optional but nice)
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    laaText: {
+        color: 'white', // White text color
+        fontWeight: 'bold', // Make the text bold
+        fontSize: 16, // A good font size for the acronym
+    },
 });
 
 export default styles;

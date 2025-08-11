@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,9 +13,11 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import axios,{AxiosError} from 'axios';
+import axios, { AxiosError } from 'axios';
 import Toast from 'react-native-toast-message';
 import config from '@/constants/config';
+// --- NEW: Import AsyncStorage ---
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface VolunteerFormState {
   fullName: string;
@@ -23,6 +25,15 @@ interface VolunteerFormState {
   phone: string;
   reason: string;
 }
+
+interface ErrorResponse {
+  message: string;
+}
+
+// --- NEW: Constants for cooldown ---
+const COOLDOWN_DURATION_MINUTES = 20;
+const COOLDOWN_STORAGE_KEY = 'volunteer_cooldown_end_time';
+
 
 const VolunteerScreen = () => {
   const [form, setForm] = useState<VolunteerFormState>({
@@ -33,66 +44,110 @@ const VolunteerScreen = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  // --- NEW: State to manage the cooldown period ---
+  const [cooldownEndTime, setCooldownEndTime] = useState<number | null>(null);
+  const [timeLeft, setTimeLeft] = useState('');
+
+  // --- NEW: useEffect to check for existing cooldown on screen load ---
+  useEffect(() => {
+    const checkCooldown = async () => {
+      const storedEndTime = await AsyncStorage.getItem(COOLDOWN_STORAGE_KEY);
+      if (storedEndTime) {
+        const endTime = parseInt(storedEndTime, 10);
+        if (new Date().getTime() < endTime) {
+          setCooldownEndTime(endTime);
+        } else {
+          // Clear expired key
+          await AsyncStorage.removeItem(COOLDOWN_STORAGE_KEY);
+        }
+      }
+    };
+    checkCooldown();
+  }, []);
+
+  // --- NEW: useEffect to manage the countdown timer ---
+  useEffect(() => {
+    if (!cooldownEndTime) {
+      setTimeLeft('');
+      return;
+    }
+
+    const calculateTimeLeft = () => {
+      const now = new Date().getTime();
+      const difference = cooldownEndTime - now;
+
+      if (difference <= 0) {
+        setCooldownEndTime(null); // Cooldown finished
+        AsyncStorage.removeItem(COOLDOWN_STORAGE_KEY);
+        return;
+      }
+
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+      setTimeLeft(`${minutes}m ${seconds}s`);
+    };
+
+    // Set initial time left immediately
+    calculateTimeLeft();
+
+    const interval = setInterval(calculateTimeLeft, 1000);
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, [cooldownEndTime]);
+
 
   const handleChange = (field: keyof VolunteerFormState, value: string) => {
     setForm({ ...form, [field]: value });
   };
 
-// Define the shape of a potential error response from your API
-interface ErrorResponse {
-  message: string;
-}
-
-const handleSubmit = async () => {
-  // --- Client-side validation remains the same ---
-  if (!form.fullName || !form.email || !form.phone || !form.reason) {
-    Toast.show({
-      type: 'error',
-      text1: 'Incomplete Form',
-      text2: 'Please fill in all the required fields to apply.',
-    });
-    return;
-  }
-
-  setLoading(true);
-  try {
-    await axios.post(`${config.BASE_URL}/api/volunteer`, form);
-
-    Toast.show({
-      type: 'success',
-      text1: 'Application Sent!',
-      text2: 'Thank you for your interest! We will review your application and be in touch soon.',
-    });
-
-    // Reset form after successful submission
-    setForm({ fullName: '', email: '', phone: '', reason: '' });
-
-  } catch (err) {
-    const error = err as AxiosError<ErrorResponse>;
-
-    // --- THIS IS THE KEY CHANGE ---
-    // Differentiate between network and server errors
-    if (!error.response) {
-      // Handle Network Error (e.g., no internet)
+  const handleSubmit = async () => {
+    if (!form.fullName || !form.email || !form.phone || !form.reason) {
       Toast.show({
         type: 'error',
-        text1: 'Network Error',
-        text2: 'Please check your internet connection and try again.',
+        text1: 'Incomplete Form',
+        text2: 'Please fill in all the required fields.',
       });
-    } else {
-      // Handle Server-Side Errors
-      Toast.show({
-        type: 'error',
-        text1: 'Submission Failed',
-        // Show a specific message from the server if available
-        text2: error.response?.data?.message || 'An error occurred. Please try again later.',
-      });
+      return;
     }
-  } finally {
-    setLoading(false);
-  }
-};
 
+    setLoading(true);
+    try {
+      await axios.post(`${config.BASE_URL}/api/volunteer`, form);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Application Sent!',
+        text2: 'Thank you! We will review your application.',
+      });
+
+      setForm({ fullName: '', email: '', phone: '', reason: '' });
+
+      // --- NEW: Set and store the cooldown ---
+      const endTime = new Date().getTime() + COOLDOWN_DURATION_MINUTES * 60 * 1000;
+      await AsyncStorage.setItem(COOLDOWN_STORAGE_KEY, endTime.toString());
+      setCooldownEndTime(endTime);
+
+    } catch (err) {
+      const error = err as AxiosError<ErrorResponse>;
+      if (!error.response) {
+        Toast.show({
+          type: 'error',
+          text1: 'Network Error',
+          text2: 'Please check your internet connection.',
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Submission Failed',
+          text2: error.response?.data?.message || 'An error occurred. Please try again.',
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isButtonDisabled = loading || !!cooldownEndTime;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -105,6 +160,7 @@ const handleSubmit = async () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContainer}
         >
+          {/* --- HEADER SECTION --- */}
           <ImageBackground
             source={require('../../assets/images/volunteer-icon.jpg')}
             style={styles.headerImage}
@@ -118,6 +174,7 @@ const handleSubmit = async () => {
             </View>
           </ImageBackground>
 
+          {/* --- FORM SECTION --- */}
           <View style={styles.formContainer}>
             <Text style={styles.formTitle}>Volunteer Application</Text>
             
@@ -128,6 +185,7 @@ const handleSubmit = async () => {
               onChangeText={(text) => handleChange('fullName', text)}
               style={styles.input}
               autoCapitalize="words"
+              editable={!isButtonDisabled} // Disables editing when loading or in cooldown
             />
 
             <TextInput
@@ -138,6 +196,7 @@ const handleSubmit = async () => {
               value={form.email}
               onChangeText={(text) => handleChange('email', text)}
               style={styles.input}
+              editable={!isButtonDisabled} // Disables editing
             />
 
             <TextInput
@@ -147,6 +206,7 @@ const handleSubmit = async () => {
               value={form.phone}
               onChangeText={(text) => handleChange('phone', text)}
               style={styles.input}
+              editable={!isButtonDisabled} // Disables editing
             />
 
             <TextInput
@@ -156,17 +216,20 @@ const handleSubmit = async () => {
               onChangeText={(text) => handleChange('reason', text)}
               multiline
               style={[styles.input, styles.textArea]}
+              editable={!isButtonDisabled} // Disables editing
             />
 
             <TouchableOpacity
               onPress={handleSubmit}
-              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-              disabled={loading}
+              style={[styles.submitButton, isButtonDisabled && styles.submitButtonDisabled]}
+              disabled={isButtonDisabled}
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.submitButtonText}>Submit Application</Text>
+                <Text style={styles.submitButtonText}>
+                  {cooldownEndTime ? `Available in ${timeLeft}` : 'Submit Application'}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -176,8 +239,8 @@ const handleSubmit = async () => {
   );
 };
 
-// --- YOUR PROVIDED STYLES ---
 const styles = StyleSheet.create({
+  // ... (All your other styles remain the same)
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -242,14 +305,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  // Added for consistency with the loading logic
   submitButtonDisabled: {
     backgroundColor: '#7DD3FC', // A lighter sky-300
+    opacity: 0.7, // Make it look more disabled
   },
   submitButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // --- NEW: Style for the countdown text ---
+  cooldownText: {
+    textAlign: 'center',
+    marginTop: 16,
+    fontSize: 14,
+    color: '#6B7280', // gray-500
   },
 });
 

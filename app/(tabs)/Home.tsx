@@ -13,11 +13,12 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
-import { useUser, useAuth } from "@clerk/clerk-expo";
+
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Toast } from "react-native-toast-message/lib/src/Toast";
+import { useAuth } from "../../context/AuthContext";
 
 // --- For clarity and type safety ---
 interface Review {
@@ -49,16 +50,17 @@ const reviewsData: Review[] = [
   },
   {
     id: "2",
-    name: "Victor Were",
-    text: "The workshops and mentorship at MPI are top-notch!",
-    image: require("../../assets/images/victor-were.jpeg"),
-  },
-  {
-    id: "3",
     name: "Kenneth Obul (App developer)",
     text: "I love how MPI empowers youth through technology and innovation. Very happy to be part of this team.",
     image: require("../../assets/images/ken-obul.jpeg"),
   },
+  {
+    id: "3",
+    name: "Victor Were",
+    text: "The workshops and mentorship at MPI are top-notch!",
+    image: require("../../assets/images/victor-were.jpeg"),
+  },
+
   {
     id: "4",
     name: "Rosaline Mrisha",
@@ -76,28 +78,81 @@ const reviewsData: Review[] = [
 const partnersData: Partner[] = [
   {
     id: "1",
-    name: "Thriving Mind Initiative",
+    name: "MATHARE Peace Initiative",
     description: "Empowering youth through mental health awareness.",
-    image: require("../../assets/images/thriving-mind-initiative.jpeg"),
+    image: require("../../assets/images/mpi-logo.jpeg"),
   },
   {
     id: "2",
-    name: "Community Health Promoters",
-    description: "Promoting health awareness and services in Mathare.",
-    image: require("../../assets/images/community-health-promoters.jpeg"),
+    name: "Unified Methodist Community on Relief",
+    description: "Providing disaster relief and community development support.",
+    image: require("../../assets/images/umco-logo.jpg"),
   },
   {
     id: "3",
+    name: "Thriving Mind Initiative",
+    description: "Promoting mental health and emotional well-being for all.",
+    image: require("../../assets/images/thriving-mind-initiative.jpeg"),
+  },
+  {
+    id: "4",
     name: "Government of Kenya",
     description: "Supporting initiatives for national development.",
     image: require("../../assets/images/gok.jpg"),
   },
   {
-    id: "4",
+    id: "5",
     name: "NACADA",
     description:
       "National Authority for the Campaign Against Alcohol and Drug Abuse.",
     image: require("../../assets/images/nacada.png"),
+  },
+  {
+    id: "6",
+    name: "NCIC Commission",
+    description: "Fostering national cohesion and integration across Kenya.",
+    image: require("../../assets/images/ncic-logo.png"),
+  },
+  {
+    id: "7",
+    name: "Kutoka Network",
+    description:
+      "Empowering communities through advocacy and grassroots programs.",
+    image: require("../../assets/images/kutoka-network.jpeg"),
+  },
+  {
+    id: "8",
+    name: "Mathare Vocational Training Center",
+    description: "Providing vocational skills training for youth in Mathare.",
+    image: require("../../assets/images/mvtc-logo.jpeg"),
+  },
+  {
+    id: "9",
+    name: "Young TIT Crew",
+    description:
+      "A vibrant dancing crew from Mathare showcasing talent and creativity.",
+    image: require("../../assets/images/youngtit-crew.jpeg"),
+  },
+  {
+    id: "10",
+    name: "Family Health Options Kenya",
+    description:
+      "Offering reproductive health services and youth empowerment programs.",
+    image: require("../../assets/images/family-health-options-kenya.jpeg"),
+  },
+  {
+    id: "11",
+    name: "OA-youth",
+    description:
+      "Youth-led initiatives for social change and community development.",
+    image: require("../../assets/images/Oayouth.jpeg"),
+  },
+  {
+    id: "12",
+    name: "Nairobi City Council",
+    description:
+      "To provide affordable, accessible and sustainable quality services, enhancing community participation and creating a secure climate for political, social and economic development.",
+    image: require("../../assets/images/ncc.png"),
   },
 ];
 
@@ -114,31 +169,15 @@ const getGreeting = (): string => {
 };
 
 const HomeScreen = () => {
-  const { user } = useUser();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
-  const [localUser, setLocalUser] = useState<LocalUser | null>(null);
+
   const router = useRouter();
   const partnersFlatListRef = useRef<FlatList<Partner> | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAutoplay, setIsAutoplay] = useState(true);
 
   // For loading indicator
-
-  // Effect to load user data from local storage
-  useEffect(() => {
-    const loadLocalUser = async () => {
-      try {
-        const userDataString = await AsyncStorage.getItem("user");
-        if (userDataString) {
-          setLocalUser(JSON.parse(userDataString));
-        }
-      } catch (err) {
-       Toast.show({ type: 'error', text1: 'Error Loading User Data', text2: 'Could not retrieve user data from storage.' });
-      }
-    };
-    loadLocalUser();
-  }, []);
 
   // Effect for the autoplaying partners carousel
   useEffect(() => {
@@ -157,56 +196,53 @@ const HomeScreen = () => {
     }
   }, [isAutoplay]);
 
+  // A clean, dedicated function to handle logging out.
+  const handleLogout = async () => {
+    setModalVisible(false); // Close the modal first
+    await signOut(); // Call the signOut function from our context
+    // The redirect to the SignScreen is handled automatically by _layout.tsx
+    // After the user is signed out, tell the router exactly where to go.
+    // We use `replace` to prevent the user from pressing the "back" button
+    // and getting back into the protected part of the app.
+    router.replace("/WelcomeScreen"); // Go back to the welcome screen
+  };
+  // ----
+
   return (
     <ScrollView
       className="flex-1 bg-white"
       contentContainerStyle={{ paddingBottom: 140 }}
     >
-      {/* User Avatar Top-Right */}
-      <View className="absolute top-6 right-5 p-3 z-10">
+      {/* --- CORRECTED HEADER SECTION --- */}
+      <View style={styles.headerContainer}>
+        <View style={styles.greetingContainer}>
+          <Text style={styles.greetingText}>{getGreeting()},</Text>
+          <Text style={styles.userNameText}>
+            {user?.name?.split(" ")[0] || "Peace Builder"} 👋
+          </Text>
+        </View>
         <TouchableOpacity onPress={() => setModalVisible(true)}>
-          {user?.imageUrl ? (
-            <Image
-              source={{ uri: user.imageUrl }}
-              style={{ width: 40, height: 40, borderRadius: 20 }}
-            />
-          ) : localUser ? (
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#0ea5e9",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Text
-                style={{ color: "white", fontWeight: "bold", fontSize: 18 }}
-              >
-                {localUser.name?.charAt(0).toUpperCase() || "U"}
-              </Text>
-            </View>
+          {user ? (
+            user.photo ? (
+              <Image source={{ uri: user.photo }} style={styles.headerAvatar} />
+            ) : (
+              <View style={[styles.headerAvatar, styles.headerAvatarInitials]}>
+                <Text style={styles.headerAvatarInitialsText}>
+                  {user.name?.charAt(0).toUpperCase() || "A"}
+                </Text>
+              </View>
+            )
           ) : (
-            // Fallback in case there is no user data at all
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#cbd5e1",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Feather name="user" size={20} color="#64748b" />
+            <View style={[styles.headerAvatar, styles.headerAvatarGuest]}>
+              <Feather name="user" size={24} color="#64748b" />
             </View>
           )}
         </TouchableOpacity>
       </View>
+      {/* --- END OF HEADER SECTION --- */}
 
-      {/* Greeting and Daily Verse */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 60 }}>
+      {/* Daily Verse Section - Greeting Text is now removed from here */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
         <ImageBackground
           source={require("../../assets/images/my-home-bg.png")}
           resizeMode="cover"
@@ -215,21 +251,34 @@ const HomeScreen = () => {
           <View style={{ padding: 20 }}>
             <Image
               source={require("../../assets/images/mpi-logo.jpeg")}
-              className="w-40 h-24 mx-auto mb-4"
+              style={{
+                width: 160,
+                height: 96,
+                alignSelf: "center",
+                marginBottom: 16,
+              }}
               resizeMode="contain"
             />
-            <Text className="text-2xl font-semibold text-white text-center mb-3">
-              {getGreeting()},{" "}
-              {user?.firstName ||
-                localUser?.name?.split(" ")[0] ||
-                "Peace Builder"}{" "}
-              👋
-            </Text>
-            <View className="bg-white/80 rounded-xl p-4 mb-2">
-              <Text className="text-sky-600 font-bold text-base mb-2">
+            {/* The Greeting Text was here, but has been moved to the header */}
+            <View
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.8)",
+                borderRadius: 12,
+                padding: 16,
+                marginBottom: 8,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#0369A1",
+                  fontWeight: "bold",
+                  fontSize: 16,
+                  marginBottom: 8,
+                }}
+              >
                 🌿 Verse of the Day
               </Text>
-              <Text className="text-slate-700 text-sm leading-relaxed">
+              <Text style={{ color: "#334155", fontSize: 14, lineHeight: 22 }}>
                 “Blessed are the peacemakers, for they will be called children
                 of God.” – Matthew 5:9
               </Text>
@@ -238,34 +287,7 @@ const HomeScreen = () => {
         </ImageBackground>
       </View>
 
-      {/* MPI Introduction Section */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 30 }}>
-        <ImageBackground
-          source={require("../../assets/images/home-bg-3.png")}
-          resizeMode="cover"
-          style={{ borderRadius: 20, overflow: "hidden" }}
-        >
-          <View style={{ padding: 20 }}>
-            <View className="bg-white/80 rounded-xl p-4">
-              <Text className="text-sky-600 font-bold text-base mb-2">
-                🕊️ Who We Are
-              </Text>
-              <Text className="text-slate-800 text-sm leading-relaxed">
-                Mathare Peace Initiative – Kenya (MPI) is a youth-led
-                organization based in Nairobi’s Mathare informal settlement. We
-                are committed to promoting peace, social justice, and youth
-                empowerment through education, arts, sports, and civic
-                engagement.
-              </Text>
-              <Text className="text-slate-800 text-sm leading-relaxed mt-2">
-                At MPI, we believe in building bridges, nurturing talents, and
-                transforming communities—one peacebuilder at a time.
-              </Text>
-            </View>
-          </View>
-        </ImageBackground>
-      </View>
-
+      {/* The rest of your content remains the same... */}
       {/* Vision & Mission Section */}
       <View style={{ paddingHorizontal: 20, paddingTop: 30 }}>
         <ImageBackground
@@ -465,66 +487,69 @@ const HomeScreen = () => {
         </View>
       </View>
 
-       
       <View style={styles.ctaContainer}>
         <ImageBackground
-          source={require('../../assets/images/cta-bg.png')} // Suggest creating a nice dark/gradient background image
+          source={require("../../assets/images/cta-bg.png")} // Suggest creating a nice dark/gradient background image
           resizeMode="cover"
           style={styles.ctaBackground}
         >
           <Text style={styles.ctaTitle}>Become a Peacebuilder</Text>
           <Text style={styles.ctaSubtitle}>
-            Your support helps us build a more just and peaceful community in Mathare and beyond.
+            Your support helps us build a more just and peaceful community in
+            Mathare and beyond.
           </Text>
 
           {/* --- Action Card 1: Donate --- */}
-          <TouchableOpacity 
-            style={styles.ctaCard} 
-            onPress={() => router.push('/(tabs)/Donate')} // Assumes you have a Donate tab
+          <TouchableOpacity
+            style={styles.ctaCard}
+            onPress={() => router.push("/(tabs)/Donate")} // Assumes you have a Donate tab
           >
             <Feather name="heart" size={24} style={styles.ctaIcon} />
             <View style={styles.ctaTextContainer}>
               <Text style={styles.ctaCardTitle}>Donate</Text>
-              <Text style={styles.ctaCardDescription}>Every contribution makes a difference.</Text>
+              <Text style={styles.ctaCardDescription}>
+                Every contribution makes a difference.
+              </Text>
             </View>
             <Feather name="chevron-right" size={24} style={styles.ctaArrow} />
           </TouchableOpacity>
 
           {/* --- Action Card 2: Volunteer --- */}
-          <TouchableOpacity 
-            style={styles.ctaCard} 
-            onPress={() => router.push('/(tabs)/Volunteer')} // Assumes you have a Volunteer tab
+          <TouchableOpacity
+            style={styles.ctaCard}
+            onPress={() => router.push("/(tabs)/Volunteer")} // Assumes you have a Volunteer tab
           >
             <Feather name="users" size={24} style={styles.ctaIcon} />
             <View style={styles.ctaTextContainer}>
               <Text style={styles.ctaCardTitle}>Volunteer</Text>
-              <Text style={styles.ctaCardDescription}>Join our team and share your skills.</Text>
+              <Text style={styles.ctaCardDescription}>
+                Join our team and share your skills.
+              </Text>
             </View>
             <Feather name="chevron-right" size={24} style={styles.ctaArrow} />
           </TouchableOpacity>
 
           {/* --- Action Card 3: Contact Us --- */}
-          <TouchableOpacity 
-            style={styles.ctaCard} 
-            onPress={() => router.push('/(tabs)/Contact')} // Assumes you have a Contact tab
+          <TouchableOpacity
+            style={styles.ctaCard}
+            onPress={() => router.push("/(tabs)/Contact")} // Assumes you have a Contact tab
           >
             <Feather name="mail" size={24} style={styles.ctaIcon} />
             <View style={styles.ctaTextContainer}>
               <Text style={styles.ctaCardTitle}>Contact Us</Text>
-              <Text style={styles.ctaCardDescription}>Have questions? We’d love to talk.</Text>
+              <Text style={styles.ctaCardDescription}>
+                Have questions? We’d love to talk.
+              </Text>
             </View>
             <Feather name="chevron-right" size={24} style={styles.ctaArrow} />
           </TouchableOpacity>
-
         </ImageBackground>
       </View>
       {/***********************************************}
       {/*               END OF NEW SECTION            */}
-      {/***********************************************}
+      {/***********************************************/}
 
-
-
-      {/* MODAL FOR USER PROFILE AND LOGOUT */}
+      {/* MODAL FOR USER PROFILE AND ACTIONS */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -532,83 +557,60 @@ const HomeScreen = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <Pressable
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.4)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-          onPress={() => setModalVisible(false)} // This allows closing the modal by tapping the background
+          style={styles.modalBackdrop}
+          onPress={() => setModalVisible(false)}
         >
-          <Pressable
-            style={{
-              backgroundColor: "white",
-              padding: 20,
-              borderRadius: 20,
-              alignItems: "center",
-              width: 280,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 4,
-              elevation: 5,
-            }}
-            onPress={() => {}} // This prevents the modal from closing when tapping inside it
-          >
-            {/* User Avatar in Modal */}
-            {user?.imageUrl ? (
-              <Image
-                source={{ uri: user.imageUrl }}
-                style={{
-                  width: 70,
-                  height: 70,
-                  borderRadius: 35,
-                  marginBottom: 10,
-                  borderWidth: 2,
-                  borderColor: "#0ea5e9",
-                }}
-              />
+          <Pressable style={styles.modalContent} onPress={() => {}}>
+            {user ? (
+              <>
+                {user.photo ? (
+                  <Image
+                    source={{ uri: user.photo }}
+                    style={styles.modalAvatar}
+                  />
+                ) : (
+                  <View style={styles.modalAvatarInitialsContainer}>
+                    <Text style={styles.modalAvatarInitialsText}>
+                      {user.name?.charAt(0).toUpperCase() || "A"}
+                    </Text>
+                  </View>
+                )}
+                <Text style={styles.modalUserName}>{user.name}</Text>
+                <Text style={styles.modalUserEmail}>{user.email}</Text>
+              </>
             ) : (
-              <View
-                style={{
-                  width: 70,
-                  height: 70,
-                  borderRadius: 35,
-                  backgroundColor: "#0ea5e9",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginBottom: 10,
-                }}
-              >
-                <Text
-                  style={{ color: "white", fontSize: 28, fontWeight: "bold" }}
-                >
-                  {localUser?.name?.charAt(0).toUpperCase() || "U"}
-                </Text>
-              </View>
+              <Text style={styles.modalUserName}>Welcome, Guest!</Text>
             )}
 
-            {/* User Name in Modal */}
-            <Text className="text-lg font-semibold text-slate-800 mb-6 text-center">
-              Signed in as {user?.fullName || localUser?.name || "User"}
-            </Text>
+            {user && (
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={() => {
+                  setModalVisible(false);
+                  router.push("./../Profile");
+                }}
+              >
+                <Feather name="edit-3" size={20} color="#334155" />
+                <Text style={styles.modalButtonText}>
+                  Edit Profile Picture{" "}
+                </Text>
+              </TouchableOpacity>
+            )}
 
-            {/* Logout Button */}
             <TouchableOpacity
-              onPress={async () => {
-                setModalVisible(false); // Close the modal first
-                await AsyncStorage.clear(); // Clear local user and token
-                if (user) {
-                  await signOut(); // Clerk logout if signed in with Clerk
-                }
-                // After all cleanup, navigate the user back to the sign-in screen
-                router.replace("/SignScreen");
-              }}
-              className="flex-row items-center bg-sky-600 px-6 py-3 rounded-xl"
+              style={[
+                styles.modalButton,
+                user ? styles.logoutButton : styles.loginButton,
+              ]}
+              onPress={handleLogout}
             >
-              <Feather name="log-out" size={20} color="white" />
-              <Text className="text-white ml-2 font-semibold text-base">
-                Logout
+              <Feather
+                name={user ? "log-out" : "log-in"}
+                size={20}
+                color="white"
+              />
+              <Text style={styles.modalButtonTextWhite}>
+                {user ? "Logout" : "Login"}
               </Text>
             </TouchableOpacity>
           </Pressable>
@@ -619,6 +621,50 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  // --- NEW HEADER STYLES ---
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between", // Puts space between items
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 50, // Safe area for iOS status bar
+    paddingBottom: 10,
+    backgroundColor: "#FFFFFF",
+  },
+  greetingContainer: {
+    // This container holds the text
+  },
+  greetingText: {
+    fontSize: 16,
+    color: "#6B7280",
+  },
+  userNameText: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#1F2937",
+  },
+  headerAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  headerAvatarInitials: {
+    backgroundColor: "#0ea5e9",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerAvatarInitialsText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 20,
+  },
+  headerAvatarGuest: {
+    backgroundColor: "#e2e8f0", // Lighter gray
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  // --- END OF NEW HEADER STYLES ---
+
   partnersContainer: {
     marginTop: 40,
     paddingBottom: 40,
@@ -626,17 +672,17 @@ const styles = StyleSheet.create({
   partnersTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#0369a1", // sky-700
+    color: "#0369a1",
     marginBottom: 16,
     paddingHorizontal: 20,
   },
   partnerCard: {
     width: 280,
-    backgroundColor: "#e0f2fe", // sky-100
+    backgroundColor: "#e0f2fe",
     borderRadius: 20,
     padding: 16,
     marginRight: 16,
-    shadowColor: "#0284c7", // sky-600
+    shadowColor: "#0284c7",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -655,12 +701,12 @@ const styles = StyleSheet.create({
   partnerName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#0369a1", // sky-700
+    color: "#0369a1",
     textAlign: "center",
   },
   partnerDescription: {
     fontSize: 13,
-    color: "#334155", // slate-700
+    color: "#334155",
     textAlign: "center",
     marginTop: 4,
   },
@@ -676,12 +722,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginHorizontal: 4,
   },
-   ctaContainer: {
+  ctaContainer: {
     marginTop: 20,
     marginHorizontal: 20,
     borderRadius: 24,
-    overflow: 'hidden', // This is crucial for the background image's border radius to work
-    shadowColor: '#000',
+    overflow: "hidden",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -690,51 +736,134 @@ const styles = StyleSheet.create({
   ctaBackground: {
     paddingVertical: 32,
     paddingHorizontal: 24,
-    backgroundColor: '#1e3a8a', // A deep blue fallback color
+    backgroundColor: "#1e3a8a",
   },
   ctaTitle: {
     fontSize: 26,
-    fontWeight: 'bold',
-    color: 'white',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "white",
+    textAlign: "center",
     marginBottom: 8,
   },
   ctaSubtitle: {
     fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
+    color: "rgba(255, 255, 255, 0.8)",
+    textAlign: "center",
     marginBottom: 24,
     lineHeight: 22,
   },
   ctaCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)', // A translucent white
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   ctaIcon: {
-    color: '#93c5fd', // A light blue accent
+    color: "#93c5fd",
     marginRight: 16,
   },
   ctaTextContainer: {
-    flex: 1, // This makes the text take up the available space
+    flex: 1,
   },
   ctaCardTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
+    fontWeight: "600",
+    color: "white",
   },
   ctaCardDescription: {
     fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: "rgba(255, 255, 255, 0.7)",
     marginTop: 2,
   },
   ctaArrow: {
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: "rgba(255, 255, 255, 0.5)",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: 24,
+    borderRadius: 20,
+    alignItems: "center",
+    width: "100%",
+    maxWidth: 320,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: "#0ea5e9",
+  },
+  modalAvatarInitialsContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#0ea5e9",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  modalAvatarInitialsText: {
+    color: "white",
+    fontSize: 32,
+    fontWeight: "bold",
+  },
+  modalUserName: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  modalUserEmail: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  modalButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+    backgroundColor: "#F3F4F6",
+  },
+  modalButtonText: {
+    marginLeft: 10,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  logoutButton: {
+    backgroundColor: "#DC2626",
+  },
+  loginButton: {
+    backgroundColor: "#0ea5e9",
+  },
+  modalButtonTextWhite: {
+    marginLeft: 10,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "white",
   },
 });
 

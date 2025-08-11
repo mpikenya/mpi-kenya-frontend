@@ -63,7 +63,7 @@ const Dashboard = () => {
   const [newAdminPassword, setNewAdminPassword] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  useEffect(() => {
+    useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         const token = await SecureStore.getItemAsync("adminToken");
@@ -72,55 +72,78 @@ const Dashboard = () => {
           return;
         }
 
-        // Use Promise.all to fetch admin details and stats concurrently
-        const [adminRes, statsRes] = await Promise.all([
-          axios.get<DashboardResponse>(
+        // --- START OF DEBUGGING BLOCK ---
+        console.log("Starting data fetch with token:", token);
+
+        // --- 1. Test the /dashboard endpoint ---
+        let adminRes;
+        try {
+          console.log("Fetching /api/admin/dashboard...");
+          adminRes = await axios.get<DashboardResponse>(
             `${config.BASE_URL}/api/admin/dashboard`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }
-          ),
-          // MODIFICATION: Fetch from the new stats endpoint
-          axios.get<DashboardStats>(`${config.BASE_URL}/api/admin/stats`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+          );
+          console.log("✅ SUCCESS: Fetched admin data:", adminRes.data);
+        } catch (dashboardError: any) {
+          console.error("❌ FAILED: Could not fetch /api/admin/dashboard");
+          if (dashboardError.response) {
+             console.error("Dashboard Error Status:", dashboardError.response.status);
+             console.error("Dashboard Error Data:", JSON.stringify(dashboardError.response.data, null, 2));
+          } else {
+             console.error("Dashboard Error Message:", dashboardError.message);
+          }
+          throw dashboardError; // Re-throw to trigger the outer catch block
+        }
 
-        // Set the admin details state
+        // --- 2. Test the /stats endpoint ---
+        let statsRes;
+        try {
+          console.log("Fetching /api/admin/stats...");
+          statsRes = await axios.get<DashboardStats>(`${config.BASE_URL}/api/admin/stats`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          console.log("✅ SUCCESS: Fetched stats data:", statsRes.data);
+        } catch (statsError: any) {
+          console.error("❌ FAILED: Could not fetch /api/admin/stats");
+           if (statsError.response) {
+             console.error("Stats Error Status:", statsError.response.status);
+             console.error("Stats Error Data:", JSON.stringify(statsError.response.data, null, 2));
+          } else {
+             console.error("Stats Error Message:", statsError.message);
+          }
+          throw statsError; // Re-throw
+        }
+        // --- END OF DEBUGGING BLOCK ---
+
+
+        // Set state only after both succeed
         setAdmin({
           name: adminRes.data.name,
           email: adminRes.data.email,
           avatar: adminRes.data.avatar || defaultAvatar,
         });
-
-        // Set the stats state
         setStats(statsRes.data);
+
       } catch (err) {
+        // Your outer catch block will now catch the re-thrown error
+        // and show the appropriate toast.
         const error = err as AxiosError<ErrorResponse>;
 
+        // Your original logic here is fine
         Toast.show({
           type: "error",
-          text1: "Error fetching dashboard data:",
-          text2: error.response?.data?.message || error.message
+          text1: "Error fetching dashboard data",
+          text2: error.response?.data?.message || 'Please check your connection.'
         });
-        // If auth fails, log the admin out
-        if (
-          error.response &&
-          (error.response.status === 401 || error.response.status === 403)
-        ) {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
           await SecureStore.deleteItemAsync("adminToken");
           router.replace("./AdminAuth");
           Toast.show({
             type: "error",
             text1: "Session Expired",
             text2: "Please log in again.",
-          });
-        } else {
-          // Handle other errors, like network errors during fetch
-          Toast.show({
-            type: "error",
-            text1: "Could not load data",
-            text2: "Please check your connection.",
           });
         }
       } finally {
