@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Mpi Kenya",
-    "slug": "mpi-kenya",
+    "slug": "Frontend",
     "owner": "peaceinitiative",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,14 +9,12 @@
     "scheme": "mpikenya",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "extra": {
       "//": "This links the project to EAS. Do not remove.",
       "eas": {
         "projectId": "84168f9b-1737-4b57-af08-20be6d3a8b3a"
       }
     },
-
     "ios": {
       "supportsTablet": true
     },
