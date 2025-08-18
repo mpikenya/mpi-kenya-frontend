@@ -17,7 +17,6 @@ import config from "../../constants/config";
 import defaultAvatar from "../../assets/images/admin-pic.png";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message"; // Import Toast for better UX
-
 // --- TypeScript Type Definitions ---
 
 interface AdminState {
@@ -63,7 +62,7 @@ const Dashboard = () => {
   const [newAdminPassword, setNewAdminPassword] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    useEffect(() => {
+  useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         const token = await SecureStore.getItemAsync("adminToken");
@@ -89,10 +88,16 @@ const Dashboard = () => {
         } catch (dashboardError: any) {
           console.error("❌ FAILED: Could not fetch /api/admin/dashboard");
           if (dashboardError.response) {
-             console.error("Dashboard Error Status:", dashboardError.response.status);
-             console.error("Dashboard Error Data:", JSON.stringify(dashboardError.response.data, null, 2));
+            console.error(
+              "Dashboard Error Status:",
+              dashboardError.response.status
+            );
+            console.error(
+              "Dashboard Error Data:",
+              JSON.stringify(dashboardError.response.data, null, 2)
+            );
           } else {
-             console.error("Dashboard Error Message:", dashboardError.message);
+            console.error("Dashboard Error Message:", dashboardError.message);
           }
           throw dashboardError; // Re-throw to trigger the outer catch block
         }
@@ -101,22 +106,27 @@ const Dashboard = () => {
         let statsRes;
         try {
           console.log("Fetching /api/admin/stats...");
-          statsRes = await axios.get<DashboardStats>(`${config.BASE_URL}/api/admin/stats`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          statsRes = await axios.get<DashboardStats>(
+            `${config.BASE_URL}/api/admin/stats`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
           console.log("✅ SUCCESS: Fetched stats data:", statsRes.data);
         } catch (statsError: any) {
           console.error("❌ FAILED: Could not fetch /api/admin/stats");
-           if (statsError.response) {
-             console.error("Stats Error Status:", statsError.response.status);
-             console.error("Stats Error Data:", JSON.stringify(statsError.response.data, null, 2));
+          if (statsError.response) {
+            console.error("Stats Error Status:", statsError.response.status);
+            console.error(
+              "Stats Error Data:",
+              JSON.stringify(statsError.response.data, null, 2)
+            );
           } else {
-             console.error("Stats Error Message:", statsError.message);
+            console.error("Stats Error Message:", statsError.message);
           }
           throw statsError; // Re-throw
         }
         // --- END OF DEBUGGING BLOCK ---
-
 
         // Set state only after both succeed
         setAdmin({
@@ -125,7 +135,6 @@ const Dashboard = () => {
           avatar: adminRes.data.avatar || defaultAvatar,
         });
         setStats(statsRes.data);
-
       } catch (err) {
         // Your outer catch block will now catch the re-thrown error
         // and show the appropriate toast.
@@ -135,9 +144,13 @@ const Dashboard = () => {
         Toast.show({
           type: "error",
           text1: "Error fetching dashboard data",
-          text2: error.response?.data?.message || 'Please check your connection.'
+          text2:
+            error.response?.data?.message || "Please check your connection.",
         });
-        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+        if (
+          error.response &&
+          (error.response.status === 401 || error.response.status === 403)
+        ) {
           await SecureStore.deleteItemAsync("adminToken");
           router.replace("./AdminAuth");
           Toast.show({
@@ -227,7 +240,7 @@ const Dashboard = () => {
         </Text>
       </View>
 
-       {/* Admin Header Section */}
+      {/* Admin Header Section */}
       <View className="flex-row justify-between items-center bg-blue-900 rounded-2xl px-4 py-4 shadow-lg shadow-blue-900/20 mb-6">
         <View className="flex-row items-center flex-1">
           <TouchableOpacity onPress={() => setMenuVisible(true)}>
@@ -330,57 +343,6 @@ const Dashboard = () => {
       </View>
 
       <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isMenuVisible}
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <TouchableOpacity
-          style={{ flex: 1 }}
-          activeOpacity={1}
-          onPressOut={() => setMenuVisible(false)}
-        >
-          <View className="flex-1 justify-end bg-black/40">
-            <TouchableOpacity activeOpacity={1}>
-              <View className="bg-white p-6 rounded-t-3xl shadow-2xl">
-                <Text className="text-xl font-bold text-gray-800 mb-5 text-center">
-                  Profile Actions
-                </Text>
-                <TouchableOpacity
-                  className="bg-blue-100 p-4 rounded-xl mb-3"
-                  onPress={() => {
-                    setMenuVisible(false);
-                    setAddAdminVisible(true);
-                  }}
-                >
-                  <Text className="text-blue-600 font-semibold text-center text-base">
-                    Add a New Admin
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  className="bg-red-100 p-4 rounded-xl"
-                  onPress={handleLogout}
-                >
-                  <Text className="text-red-600 font-semibold text-center text-base">
-                    Logout
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  className="mt-6 bg-gray-100 p-3 rounded-xl"
-                  onPress={() => setMenuVisible(false)}
-                >
-                  <Text className="text-gray-600 text-center font-medium">
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Add Admin Modal */}
-      <Modal
         animationType="fade"
         transparent={true}
         visible={isAddAdminVisible}
@@ -391,29 +353,42 @@ const Dashboard = () => {
             <Text className="text-xl font-bold text-gray-800 mb-5">
               Add New Admin
             </Text>
+
+            {/* Full Name */}
             <TextInput
-              className="bg-gray-100 p-3 rounded-lg mb-3 border border-gray-200"
+              className="bg-gray-100 text-black p-3 rounded-lg mb-3 border border-gray-200"
               placeholder="Full Name"
+              placeholderTextColor="black"
               value={newAdminName}
               onChangeText={setNewAdminName}
             />
+
+            {/* Email Address */}
             <TextInput
-              className="bg-gray-100 p-3 rounded-lg mb-3 border border-gray-200"
+              className="bg-gray-100 text-black p-3 rounded-lg mb-3 border border-gray-200"
               placeholder="Email Address"
+              placeholderTextColor="black"
               value={newAdminEmail}
               onChangeText={setNewAdminEmail}
               keyboardType="email-address"
               autoCapitalize="none"
             />
+
+            {/* Password */}
             <TextInput
-              className="bg-gray-100 p-3 rounded-lg mb-5 border border-gray-200"
+              className="bg-gray-100 text-black p-3 rounded-lg mb-5 border border-gray-200"
               placeholder="Password"
+              placeholderTextColor="black"
               value={newAdminPassword}
               onChangeText={setNewAdminPassword}
               secureTextEntry
             />
+
+            {/* Submit Button */}
             <TouchableOpacity
-              className={`bg-blue-500 p-4 rounded-xl ${isSubmitting ? "opacity-50" : ""}`}
+              className={`bg-blue-500 p-4 rounded-xl ${
+                isSubmitting ? "opacity-50" : ""
+              }`}
               onPress={handleAddAdmin}
               disabled={isSubmitting}
             >
@@ -425,6 +400,8 @@ const Dashboard = () => {
                 </Text>
               )}
             </TouchableOpacity>
+
+            {/* Cancel Button */}
             <TouchableOpacity
               className="mt-4"
               onPress={() => setAddAdminVisible(false)}

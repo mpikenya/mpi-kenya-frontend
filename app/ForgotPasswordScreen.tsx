@@ -20,7 +20,7 @@ import { Feather } from '@expo/vector-icons';
 
 // Load images from the assets folder
 const MpiLogo = require('../assets/images/mpi-logo.jpeg');
-const ForgotPasswordIllustration = require('../assets/images/forgot-img.png');
+const ForgotPasswordIllustration = require('../assets/images/forgot-password.png');
 
 const ForgotPasswordScreen = () => {
     const [email, setEmail] = useState('');
