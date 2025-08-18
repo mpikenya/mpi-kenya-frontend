@@ -173,6 +173,11 @@ const Dashboard = () => {
     router.replace("./AdminAuth");
   };
 
+   const openAddAdminModal = () => {
+    setMenuVisible(false); // Close the menu modal first
+    setAddAdminVisible(true); // Then open the add admin modal
+  };
+
   const handleAddAdmin = async () => {
     if (!newAdminName || !newAdminEmail || !newAdminPassword) {
       Toast.show({
@@ -341,6 +346,45 @@ const Dashboard = () => {
           <Text className="text-sm text-gray-500 mt-1">Recent Uploads</Text>
         </View>
       </View>
+
+       {/* --- ADDED MENU MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isMenuVisible}
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/60 p-4">
+          <View className="bg-white w-full max-w-xs p-6 rounded-2xl shadow-xl">
+            <Text className="text-xl font-bold text-gray-800 mb-5 text-center">
+              Menu
+            </Text>
+
+            <TouchableOpacity
+              className="bg-sky-500 p-4 rounded-xl mb-3"
+              onPress={openAddAdminModal}
+            >
+              <Text className="text-white font-bold text-center">
+                Add New Admin
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="bg-red-500 p-4 rounded-xl mb-4"
+              onPress={handleLogout}
+            >
+              <Text className="text-white font-bold text-center">Logout</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="mt-2"
+              onPress={() => setMenuVisible(false)}
+            >
+              <Text className="text-gray-500 text-center">Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         animationType="fade"
