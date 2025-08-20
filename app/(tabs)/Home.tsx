@@ -86,7 +86,7 @@ const partnersData: Partner[] = [
     id: "2",
     name: "Unified Methodist Community on Relief",
     description: "Providing disaster relief and community development support.",
-    image: require("../../assets/images/umco-logo.jpg"),
+    image: require("../../assets/images/umcor-logo.png"),
   },
   {
     id: "3",
@@ -276,7 +276,7 @@ const HomeScreen = () => {
                   marginBottom: 8,
                 }}
               >
-                🌿 Verse of the Day
+                🌿 Theme of the verse
               </Text>
               <Text style={{ color: "#334155", fontSize: 14, lineHeight: 22 }}>
                 “Blessed are the peacemakers, for they will be called children

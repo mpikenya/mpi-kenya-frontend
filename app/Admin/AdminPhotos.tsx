@@ -175,6 +175,7 @@ const AdminPhotos = () => {
         <TextInput
           style={styles.input}
           placeholder="Caption for this new batch"
+          placeholderTextColor="#495057"
           value={caption}
           onChangeText={setCaption}
         />

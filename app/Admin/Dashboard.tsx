@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { Feather } from "@expo/vector-icons";
+
 import {
   View,
   Text,
@@ -49,6 +51,9 @@ const Dashboard = () => {
     email: "",
     avatar: defaultAvatar,
   });
+
+  const [showPassword, setShowPassword] = useState(false);
+
   // NEW: State to hold the fetched dashboard statistics
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -173,7 +178,7 @@ const Dashboard = () => {
     router.replace("./AdminAuth");
   };
 
-   const openAddAdminModal = () => {
+  const openAddAdminModal = () => {
     setMenuVisible(false); // Close the menu modal first
     setAddAdminVisible(true); // Then open the add admin modal
   };
@@ -347,45 +352,7 @@ const Dashboard = () => {
         </View>
       </View>
 
-       {/* --- ADDED MENU MODAL --- */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isMenuVisible}
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <View className="flex-1 justify-center items-center bg-black/60 p-4">
-          <View className="bg-white w-full max-w-xs p-6 rounded-2xl shadow-xl">
-            <Text className="text-xl font-bold text-gray-800 mb-5 text-center">
-              Menu
-            </Text>
-
-            <TouchableOpacity
-              className="bg-sky-500 p-4 rounded-xl mb-3"
-              onPress={openAddAdminModal}
-            >
-              <Text className="text-white font-bold text-center">
-                Add New Admin
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="bg-red-500 p-4 rounded-xl mb-4"
-              onPress={handleLogout}
-            >
-              <Text className="text-white font-bold text-center">Logout</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="mt-2"
-              onPress={() => setMenuVisible(false)}
-            >
-              <Text className="text-gray-500 text-center">Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
+      {/* --- ADDED MENU MODAL --- */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -418,15 +385,27 @@ const Dashboard = () => {
               autoCapitalize="none"
             />
 
-            {/* Password */}
-            <TextInput
-              className="bg-gray-100 text-black p-3 rounded-lg mb-5 border border-gray-200"
-              placeholder="Password"
-              placeholderTextColor="black"
-              value={newAdminPassword}
-              onChangeText={setNewAdminPassword}
-              secureTextEntry
-            />
+            {/* Password with Toggle Eye */}
+            <View className="relative mb-5">
+              <TextInput
+                className="bg-gray-100 text-black p-3 rounded-lg border border-gray-200 pr-12"
+                placeholder="Password"
+                placeholderTextColor="black"
+                value={newAdminPassword}
+                onChangeText={setNewAdminPassword}
+                secureTextEntry={!showPassword} // 👈 controlled by state
+              />
+              <TouchableOpacity
+                className="absolute right-3 top-3"
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Feather
+                  name={showPassword ? "eye-off" : "eye"}
+                  size={20}
+                  color="#4b5563"
+                />
+              </TouchableOpacity>
+            </View>
 
             {/* Submit Button */}
             <TouchableOpacity

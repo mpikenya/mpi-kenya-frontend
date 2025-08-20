@@ -147,8 +147,8 @@ const AdminNews = () => {
       {/* --- CREATE POST SECTION --- */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Create New Post</Text>
-        <TextInput style={styles.input} placeholder="Title" value={title} onChangeText={setTitle} />
-        <TextInput style={[styles.input, styles.textArea]} placeholder="Write detailed content(Indicate Event Date)..." value={content} onChangeText={setContent} multiline />
+        <TextInput style={styles.input} placeholder="Title" value={title} onChangeText={setTitle} placeholderTextColor="#495057" />
+        <TextInput style={[styles.input, styles.textArea]} placeholder="Write detailed content(Indicate Event Date)..." placeholderTextColor="#495057" value={content} onChangeText={setContent} multiline />
         <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
           <Text style={styles.dateButtonText}>📅 {date.toDateString()}</Text>
         </TouchableOpacity>
