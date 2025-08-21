@@ -253,7 +253,7 @@ const Dashboard = () => {
       {/* Admin Header Section */}
       <View className="flex-row justify-between items-center bg-blue-900 rounded-2xl px-4 py-4 shadow-lg shadow-blue-900/20 mb-6">
         <View className="flex-row items-center flex-1">
-          <TouchableOpacity onPress={() => setMenuVisible(true)}>
+          <TouchableOpacity onPress={openAddAdminModal}>
             <Image
               source={
                 typeof admin.avatar === "string"

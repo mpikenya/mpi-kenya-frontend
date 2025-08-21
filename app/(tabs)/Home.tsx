@@ -276,7 +276,7 @@ const HomeScreen = () => {
                   marginBottom: 8,
                 }}
               >
-                🌿 Theme of the verse
+                🌿 Theme verse
               </Text>
               <Text style={{ color: "#334155", fontSize: 14, lineHeight: 22 }}>
                 “Blessed are the peacemakers, for they will be called children
