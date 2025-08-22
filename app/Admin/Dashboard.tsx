@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Feather } from "@expo/vector-icons";
-
 import {
   View,
   Text,
@@ -18,7 +17,8 @@ import axios, { AxiosError } from "axios";
 import config from "../../constants/config";
 import defaultAvatar from "../../assets/images/admin-pic.png";
 import { useRouter } from "expo-router";
-import Toast from "react-native-toast-message"; // Import Toast for better UX
+import Toast from "react-native-toast-message";
+
 // --- TypeScript Type Definitions ---
 
 interface AdminState {
@@ -33,7 +33,6 @@ interface DashboardResponse {
   avatar?: string;
 }
 
-// NEW: Define the shape of the stats object from our new API
 interface DashboardStats {
   totalNews: number;
   totalImages: number;
@@ -45,7 +44,6 @@ interface ErrorResponse {
 }
 
 const Dashboard = () => {
-  // --- Typed State ---
   const [admin, setAdmin] = useState<AdminState>({
     name: "",
     email: "",
@@ -53,11 +51,13 @@ const Dashboard = () => {
   });
 
   const [showPassword, setShowPassword] = useState(false);
-
-  // NEW: State to hold the fetched dashboard statistics
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // --- REFACTORED STATE MANAGEMENT ---
+  // State for the new options menu (Add Admin, Logout)
   const [isMenuVisible, setMenuVisible] = useState<boolean>(false);
+  // State for the "Add Admin" form modal
   const [isAddAdminVisible, setAddAdminVisible] = useState<boolean>(false);
 
   const router = useRouter();
@@ -76,64 +76,16 @@ const Dashboard = () => {
           return;
         }
 
-        // --- START OF DEBUGGING BLOCK ---
-        console.log("Starting data fetch with token:", token);
-
-        // --- 1. Test the /dashboard endpoint ---
-        let adminRes;
-        try {
-          console.log("Fetching /api/admin/dashboard...");
-          adminRes = await axios.get<DashboardResponse>(
+        const [adminRes, statsRes] = await Promise.all([
+          axios.get<DashboardResponse>(
             `${config.BASE_URL}/api/admin/dashboard`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
-          console.log("✅ SUCCESS: Fetched admin data:", adminRes.data);
-        } catch (dashboardError: any) {
-          console.error("❌ FAILED: Could not fetch /api/admin/dashboard");
-          if (dashboardError.response) {
-            console.error(
-              "Dashboard Error Status:",
-              dashboardError.response.status
-            );
-            console.error(
-              "Dashboard Error Data:",
-              JSON.stringify(dashboardError.response.data, null, 2)
-            );
-          } else {
-            console.error("Dashboard Error Message:", dashboardError.message);
-          }
-          throw dashboardError; // Re-throw to trigger the outer catch block
-        }
+            { headers: { Authorization: `Bearer ${token}` } }
+          ),
+          axios.get<DashboardStats>(`${config.BASE_URL}/api/admin/stats`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
-        // --- 2. Test the /stats endpoint ---
-        let statsRes;
-        try {
-          console.log("Fetching /api/admin/stats...");
-          statsRes = await axios.get<DashboardStats>(
-            `${config.BASE_URL}/api/admin/stats`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
-          console.log("✅ SUCCESS: Fetched stats data:", statsRes.data);
-        } catch (statsError: any) {
-          console.error("❌ FAILED: Could not fetch /api/admin/stats");
-          if (statsError.response) {
-            console.error("Stats Error Status:", statsError.response.status);
-            console.error(
-              "Stats Error Data:",
-              JSON.stringify(statsError.response.data, null, 2)
-            );
-          } else {
-            console.error("Stats Error Message:", statsError.message);
-          }
-          throw statsError; // Re-throw
-        }
-        // --- END OF DEBUGGING BLOCK ---
-
-        // Set state only after both succeed
         setAdmin({
           name: adminRes.data.name,
           email: adminRes.data.email,
@@ -141,14 +93,10 @@ const Dashboard = () => {
         });
         setStats(statsRes.data);
       } catch (err) {
-        // Your outer catch block will now catch the re-thrown error
-        // and show the appropriate toast.
         const error = err as AxiosError<ErrorResponse>;
-
-        // Your original logic here is fine
         Toast.show({
           type: "error",
-          text1: "Error fetching dashboard data",
+          text1: "Error fetching data",
           text2:
             error.response?.data?.message || "Please check your connection.",
         });
@@ -174,13 +122,14 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync("adminToken");
-    setMenuVisible(false);
+    setMenuVisible(false); // Close menu on logout
     router.replace("./AdminAuth");
   };
 
+  // --- NEW FUNCTION TO HANDLE THE MENU -> ADD ADMIN FLOW ---
   const openAddAdminModal = () => {
-    setMenuVisible(false); // Close the menu modal first
-    setAddAdminVisible(true); // Then open the add admin modal
+    setMenuVisible(false); // First, close the options menu
+    setAddAdminVisible(true); // Then, open the "Add Admin" modal
   };
 
   const handleAddAdmin = async () => {
@@ -212,10 +161,9 @@ const Dashboard = () => {
       setNewAdminName("");
       setNewAdminEmail("");
       setNewAdminPassword("");
-      setAddAdminVisible(false);
+      setAddAdminVisible(false); // Close the form on success
     } catch (err) {
       const error = err as AxiosError<ErrorResponse>;
-      // MODIFICATION: Add network error check
       if (!error.response) {
         Toast.show({
           type: "error",
@@ -244,6 +192,7 @@ const Dashboard = () => {
 
   return (
     <ScrollView className="flex-1 bg-white p-6 pt-10">
+      {/* Welcome Message */}
       <View className="m-6">
         <Text>
           Welcome Admin <Text className="font-bold">{admin.name}</Text>!
@@ -253,7 +202,8 @@ const Dashboard = () => {
       {/* Admin Header Section */}
       <View className="flex-row justify-between items-center bg-blue-900 rounded-2xl px-4 py-4 shadow-lg shadow-blue-900/20 mb-6">
         <View className="flex-row items-center flex-1">
-          <TouchableOpacity onPress={openAddAdminModal}>
+          {/* --- MODIFIED ONPRESS: NOW OPENS THE MENU --- */}
+          <TouchableOpacity onPress={() => setMenuVisible(true)}>
             <Image
               source={
                 typeof admin.avatar === "string"
@@ -276,7 +226,6 @@ const Dashboard = () => {
 
       {/* Action Cards */}
       <View className="mt-6 flex-col justify-center items-center space-y-4 mb-4 px-4">
-        {/* MODIFICATION: Added the missing Text components */}
         <TouchableOpacity
           onPress={() => router.push("./AdminPosts")}
           className="w-full bg-sky-50 p-6 rounded-xl border mb-4 border-sky-100 shadow-sm"
@@ -289,7 +238,6 @@ const Dashboard = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* MODIFICATION: Added the missing Text components */}
         <TouchableOpacity
           onPress={() => router.push("./AdminPhotos")}
           className="w-full bg-gray-50 p-6 mb-4 rounded-xl border border-gray-200 shadow-sm"
@@ -303,7 +251,6 @@ const Dashboard = () => {
         </TouchableOpacity>
       </View>
 
-      {/* MODIFICATION: This button now links to the Normal Users screen */}
       <TouchableOpacity
         onPress={() => router.push("./NormalUsersView")}
         className="w-full bg-gray-50 p-6 rounded-xl border mb-4 border-gray-200 shadow-sm"
@@ -316,7 +263,6 @@ const Dashboard = () => {
         </Text>
       </TouchableOpacity>
 
-      {/* MODIFICATION: This button now links to the Admin Personnel screen */}
       <TouchableOpacity
         onPress={() => router.push("./AdminPersonnel")}
         className="w-full bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm"
@@ -329,10 +275,9 @@ const Dashboard = () => {
         </Text>
       </TouchableOpacity>
 
-      {/* REAL STATS: Replace dummy stats with fetched data */}
+      {/* Stats Section */}
       <View className="flex-row justify-around mt-8 bg-gray-50 p-4 rounded-xl border border-gray-200">
         <View className="items-center">
-          {/* Show a loading indicator until stats are loaded */}
           <Text className="text-2xl font-bold text-sky-600">
             {stats ? stats.totalNews : "..."}
           </Text>
@@ -352,7 +297,46 @@ const Dashboard = () => {
         </View>
       </View>
 
-      {/* --- ADDED MENU MODAL --- */}
+      {/* --- NEW: ADMIN OPTIONS MENU MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isMenuVisible}
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/60 p-4">
+          <View className="bg-white w-full max-w-sm p-6 rounded-2xl shadow-xl">
+            <Text className="text-lg font-bold text-gray-800 mb-6 text-center">
+              Admin Menu
+            </Text>
+
+            <TouchableOpacity
+              onPress={openAddAdminModal} // This now opens the next modal
+              className="bg-blue-500 p-3 rounded-lg mb-3"
+            >
+              <Text className="text-white font-bold text-center">
+                Add New Admin
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleLogout}
+              className="bg-red-500 p-3 rounded-lg mb-4"
+            >
+              <Text className="text-white font-bold text-center">Logout</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="mt-2"
+              onPress={() => setMenuVisible(false)}
+            >
+              <Text className="text-gray-500 text-center">Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* --- ADD ADMIN FORM MODAL (Unchanged) --- */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -365,35 +349,32 @@ const Dashboard = () => {
               Add New Admin
             </Text>
 
-            {/* Full Name */}
             <TextInput
               className="bg-gray-100 text-black p-3 rounded-lg mb-3 border border-gray-200"
               placeholder="Full Name"
-              placeholderTextColor="black"
+              placeholderTextColor="#6b7280"
               value={newAdminName}
               onChangeText={setNewAdminName}
             />
 
-            {/* Email Address */}
             <TextInput
               className="bg-gray-100 text-black p-3 rounded-lg mb-3 border border-gray-200"
               placeholder="Email Address"
-              placeholderTextColor="black"
+              placeholderTextColor="#6b7280"
               value={newAdminEmail}
               onChangeText={setNewAdminEmail}
               keyboardType="email-address"
               autoCapitalize="none"
             />
 
-            {/* Password with Toggle Eye */}
             <View className="relative mb-5">
               <TextInput
                 className="bg-gray-100 text-black p-3 rounded-lg border border-gray-200 pr-12"
                 placeholder="Password"
-                placeholderTextColor="black"
+                placeholderTextColor="#6b7280"
                 value={newAdminPassword}
                 onChangeText={setNewAdminPassword}
-                secureTextEntry={!showPassword} // 👈 controlled by state
+                secureTextEntry={!showPassword}
               />
               <TouchableOpacity
                 className="absolute right-3 top-3"
@@ -407,7 +388,6 @@ const Dashboard = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Submit Button */}
             <TouchableOpacity
               className={`bg-blue-500 p-4 rounded-xl ${
                 isSubmitting ? "opacity-50" : ""
@@ -424,7 +404,6 @@ const Dashboard = () => {
               )}
             </TouchableOpacity>
 
-            {/* Cancel Button */}
             <TouchableOpacity
               className="mt-4"
               onPress={() => setAddAdminVisible(false)}
